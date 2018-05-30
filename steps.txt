@@ -1,0 +1,4 @@
+Steps taken to implement:
+ - Socket creation, binding, listening and accepting
+ - Custom error function
+ - 

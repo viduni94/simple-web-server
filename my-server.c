@@ -1,8 +1,8 @@
 /*
-Description: A web server written in C
+Description: A web server written in C with the use of standard libraries
 Author: Viduni Wickramarachchi
 
-Instructions : The port number should be passed as an argument
+Instructions: The port number should be passed as an argument
 */
 
 #include <stdio.h>
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 		if(newsockfd < 0)
 			error("Error in accepting");
 		pid = fork();
-		if(pid < 0) 
+		if(pid < 0)
 			error("Error in fork");
 		if(pid == 0) { //child process
 			close(sockfd);
@@ -68,6 +68,12 @@ int main(int argc, char *argv[]) {
 	close(sockfd);
 	return 0;
 
+}
+
+//Customized error function
+void error(const char *msg) {
+	perror(msg);
+	exit(1);
 }
 
 
