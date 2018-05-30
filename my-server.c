@@ -18,6 +18,8 @@ Instructions: The port number should be passed as an argument
 #define EOL "\r\n"
 #define EOL_SIZE 2
 
+#define BACKLOG 5
+
 int main(int argc, char *argv[]) {
 
 	int sockfd, newsockfd, portno, pid;
@@ -45,7 +47,7 @@ int main(int argc, char *argv[]) {
 	if(bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 )
 		error("Error in binding");
 	//Listening to any client requests with a maximum of 5 connections in the queue
-	listen(sockfd, 5);
+	listen(sockfd, BACKLOG);
 	clientlen = sizeof(client_addr);
 
 	//Makes the server run continuously and create a seperate process for each connection
@@ -59,6 +61,11 @@ int main(int argc, char *argv[]) {
 		if(pid == 0) { //child process
 			close(sockfd);
 			connection(newsockfd);
+
+			//Print message to show that a connection was received (inet_ntop converts IP to human readable format, get_in_addr gets IP address)
+			inet_ntop(client_addr.sin_family, get_in_addr((struct sockaddr *) &client_addr), s, sizeof s);
+			printf("Server: Received a connection from %s\n", s);
+
 			exit(0);
 		} else {
 			close(newsockfd);
@@ -66,7 +73,7 @@ int main(int argc, char *argv[]) {
 	} //end of while loop
 
 	close(sockfd);
-	return 0;
+	return 0; //Unreachable code
 
 }
 
