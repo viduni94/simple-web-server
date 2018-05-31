@@ -60,7 +60,8 @@ int main(int argc, char *argv[]) {
 			error("Error in fork");
 		if(pid == 0) { //child process
 			close(sockfd);
-			connection(newsockfd);
+			//Process request
+			process_request(newsockfd);
 
 			//Print message to show that a connection was received (inet_ntop converts IP to human readable format, get_in_addr gets IP address)
 			inet_ntop(client_addr.sin_family, get_in_addr((struct sockaddr *) &client_addr), s, sizeof s);
@@ -81,6 +82,54 @@ int main(int argc, char *argv[]) {
 void error(const char *msg) {
 	perror(msg);
 	exit(1);
+}
+
+//Function to process the GET request, check for supported media types, serves files from the hardware and send error codes
+int process_request(int fd) {
+	char request[500], resource[500], *pointer;
+	int fd1, length;
+
+	//Check if requesrt is received
+	if(receive_new(fd, request) == 0) {
+		printf("Request Receiving Failed\n");
+	}
+	printf("%s\n", request);
+
+	//Check for a valid request
+	//strstr returns the location of HTTP in request and NULL if not present
+	pointer = strstr(request, " HTTP/");
+	if(pointer == NULL) {
+		printf("Not a HTTP request\n");
+	} else {
+		*pointer = 0;
+		pointer = NULL;
+
+		if(strncmp(request, "GET ", 4) == 0) {
+			pointer = request + 4;
+		}
+
+		if(pointer == NULL) {
+			printf("Unknown Request\n");
+		} else {
+			if(ptr[strlen(ptr) - 1] == '/') {
+				strcat(pointer, "index.html");
+			}
+			strcpy(resource, webroot());
+			strcat(resource, pointer);
+
+			//Searches for the first occurence of '.' in the string 'pointer'
+			char* s = strchr(pointer, '.');
+		}
+	}
+
+}
+
+int receive_new() {
+
+}
+
+char* webroot() {
+
 }
 
 
