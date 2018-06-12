@@ -134,12 +134,50 @@ int process_request(int fd) {
 					//Handling php requests
 					} else if(strcmp(extensions[i].ext, "php") == 0) {
 						php_cgi(resource, fd);
+						sleep(1);
+						close(fd);
+						exit(1);
+					} else {
+						printf("200 OK, Content-Type: %s\n\n", extensions[i].mediatype);
+						send_response(fd, "HTTP/1.1 200 OK\r\n");
+						send_response(fd, "Server :  Web Server in C\r\n\r\n");
+
+						//If the request is a GET request
+						if(pointer == request + 4) {
+							if((length = get_file_size(fd1)) == -1)
+								printf("Error in getting size! \n");
+							size_t total_bytes = 0;
+							ssize_t bytes_sent;
+							while(total_bytes < length) {
+								//Zero copy optimization
+								if((bytes_sent = sendfile(fd, fd1, 0, length - total_bytes)) <= 0) {
+									if(errno == EINTR || errno == EAGAIN) {
+										continue;
+									}
+									perror("sendfile");
+									return -1;
+								}
+								total_bytes += bytes_sent;
+							}
+						}
 					}
+					break;
+				}
+				int size = sizeof(extensions) / sizeof(extensions[0]);
+				if(i == size-1) {
+					printf("415 Unsupported Media Type\n");
+			        send_response(fd, "HTTP/1.1 415 Unsupported Media Type\r\n");
+			        send_response(fd, "Server : Web Server in C\r\n\r\n");
+			        send_response(fd, "<html><head><title>415 Unsupported Media Type</head></title>");
+			        send_response(fd, "<body><p>415 Unsupported Media Type!</p></body></html>");
 				}
 			}
+			close(fd);
 		}
 	}
-
+	/*Makes the full-duplex connection on the socket associated with the
+	file descriptor socket to be shut down*/
+	shutdown(fd, SHUT_RDWR);
 }
 
 int receive_new() {
