@@ -243,7 +243,27 @@ char* webroot() {
 
 }
 
+//Function to handle PHP requests
 void php_cgi(char* script_path, int fd) {
+	send_response(fd, "HTTP/1.1 200 OK\n Server: Web server in C\n Connection: close");
+
+	//Duplicates the file descriptor, making them aliases, and deletes the old file descriptor
+	dup2(fd, STDOUT_FILENO);
+	char script[500];
+	strcpy(script, "SCRIPT_FILENAME=");
+	strcat(script, script_path);
+
+	//Adds setting to the environment
+	putenv("GATEWAY_INTERFACE=CGI/1.1");
+	putenv(script);
+	putenv("QUERY_STRING=");
+	putenv("REQUEST_METHOD=GET");
+	putenv("REDIRECT_STATUS=true");
+	putenv("SERVER_PROTOCOL=HTTP/1.1");
+	putenv("REMOTE_HOST=127.0.0.1");
+
+	//replaces the current running process with a new process
+	execl("/usr/bin/php-cgi", "php-cgi", NULL);
 
 }
 
