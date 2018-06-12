@@ -90,6 +90,21 @@ void error(const char *msg) {
 	exit(1);
 }
 
+//Possible media types
+extn extensions[] ={
+	{"html","text/html" },
+	{"php", "text/html" },
+	{"txt", "text/plain" },
+	{"jpg", "image/jpg" },
+	{"jpeg","image/jpeg"},
+	{"png", "image/png" },
+	{"zip", "image/zip" },
+	{"gz",  "image/gz"  },
+	{"tar", "image/tar" },
+	{"pdf","application/pdf"},
+	{0,0}
+};
+
 //Function to process the GET request, check for supported media types, serves files from the hardware and send error codes
 int process_request(int fd) {
 	char request[500], resource[500], *pointer;
