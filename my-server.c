@@ -175,14 +175,33 @@ int process_request(int fd) {
 			close(fd);
 		}
 	}
-	/*Makes the full-duplex connection on the socket associated with the
-	file descriptor socket to be shut down*/
+	/* Makes the full-duplex connection on the socket associated with the
+	file descriptor socket to be shut down */
 	shutdown(fd, SHUT_RDWR);
 }
 
+//Function to receive the buffer until EOL is reached
 int receive_new() {
+	char *p buffer; //Pointer to the buffer
+	int eol_matched = 0;
 
+	//Receive 1 byte at a time and store it at pointer p (file descriptor, buffer_start, length, flag)
+	while(recv(fd, p, 1, 0) != 0) {
+		if(*p == EOL[eol_matched]) { //if the byte matched with the first EOL byte : '\r'
+			++eol_matched;
+			if(eol_matched == EOL_SIZE) { //if both bytes  matches with EOL
+				*(p+1-EOL_SIZE) = '\0'; //End the string
+				return (strlen(buffer)); //return the bytes received
+			}
+		} else {
+			eol_matched = 0;
+		}
+		p++; //Increment the pointer to receive the next byte
+	}
+	return(0);
 }
+
+
 
 char* webroot() {
 
