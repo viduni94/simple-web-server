@@ -26,11 +26,16 @@ typedef struct {
 	char *mediatype;
 } extn;
 
+int process_request(int fd);
+int receive_new();
+int receive_new(int fd, char *buffer);
+char* webroot();
+
 int main(int argc, char *argv[]) {
 
 	int sockfd, newsockfd, portno, pid;
 	socklen_t clientlen;
-	struct socketaddr_in server_addr, client_addr;
+	struct sockaddr_in server_addr, client_addr;
 
 	//Check whether the port is passed as an argument
 	if(argc < 2) {
@@ -41,7 +46,7 @@ int main(int argc, char *argv[]) {
 	//socket creation
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);  //IPv4 domain, TCP (sock_stream), Protocol value for IP
 	if(sockfd < 0)
-		error("Error in opening socket");
+		perror("Error in opening socket");
 	bzero((char *) &server_addr, sizeof(server_addr));  //Copies zeroes to the size of the server address to the server address buffer
 	portno = atoi(argv[1]);  //Get the port number from the argument, atoi converts string argument to integer
 
@@ -51,7 +56,7 @@ int main(int argc, char *argv[]) {
 
 	//Bind the socket to the address and the port number
 	if(bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 )
-		error("Error in binding");
+		perror("Error in binding");
 	//Listening to any client requests with a maximum of 5 connections in the queue
 	listen(sockfd, BACKLOG);
 	clientlen = sizeof(client_addr);
@@ -60,10 +65,10 @@ int main(int argc, char *argv[]) {
 	while(1) {
 		newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &clientlen);
 		if(newsockfd < 0)
-			error("Error in accepting");
+			perror("Error in accepting");
 		pid = fork();
 		if(pid < 0)
-			error("Error in fork");
+			perror("Error in fork");
 		if(pid == 0) { //child process
 			close(sockfd);
 			//Process request
@@ -82,12 +87,6 @@ int main(int argc, char *argv[]) {
 	close(sockfd);
 	return 0; //Unreachable code
 
-}
-
-//Customized error function
-void error(const char *msg) {
-	perror(msg);
-	exit(1);
 }
 
 //Possible media types
@@ -205,7 +204,7 @@ int process_request(int fd) {
 }
 
 //Function to receive the buffer until EOL is reached
-int receive_new() {
+int receive_new(int fd, char *buffer) {
 	char *p buffer; //Pointer to the buffer
 	int eol_matched = 0;
 
@@ -278,7 +277,7 @@ int get_file_size(int fd) {
 }
 
 //Function to send response
-void send_response(int fd. char *msg) {
+void send_response(int fd, char *msg) {
 	int len = strlen(msg);
 	if(send(fd, msg, len, 0) == -1) {
 		printf("Error in send\n");
