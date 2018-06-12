@@ -21,8 +21,8 @@ Instructions: The port number should be passed as an argument
 //For the stat structure
 #include <sys/stat.h>
 
-//To use sendfile() in osx --> splice()
-#include <fcntl.h>
+//To use sendfile() in osx --> copyfile()
+#include <copyfile.h>
 
 #define EOL "\r\n"
 #define EOL_SIZE 2
@@ -185,8 +185,9 @@ int process_request(int fd) {
 							ssize_t bytes_sent;
 							while(total_bytes < length) {
 								//Zero copy optimization
-								//splice() copies data between two file descriptors within the kernel
-								if((bytes_sent = splice(fd, 0, fd1, 0, length - total_bytes)) <= 0) {
+								//fcopyfile() in osx copies data between two file descriptors within the kernel
+								copyfile_flags_t flags = COPYFILE_DATA;
+								if((bytes_sent = fcopyfile(fd, fd1, 0, flags)) <= 0) {
 									//EINTR - A signal interrupted the system call was completed
 									//EAGAIN - When performing non-blocking I/O - not all data was sent due to the socket	buffer being filled.
 									if(errno == EINTR || errno == EAGAIN) {
@@ -216,6 +217,7 @@ int process_request(int fd) {
 	/* Makes the full-duplex connection on the socket associated with the
 	file descriptor socket to be shut down */
 	shutdown(fd, SHUT_RDWR);
+	return(0);
 }
 
 //Function to receive the buffer until EOL is reached
