@@ -27,9 +27,11 @@ typedef struct {
 } extn;
 
 int process_request(int fd);
-int receive_new();
 int receive_new(int fd, char *buffer);
 char* webroot();
+void send_response(int fd, char *msg);
+int get_file_size(int fd);
+void php_cgi(char* script_path, int fd);
 
 int main(int argc, char *argv[]) {
 
