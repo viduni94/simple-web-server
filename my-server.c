@@ -20,6 +20,12 @@ Instructions: The port number should be passed as an argument
 
 #define BACKLOG 5
 
+//Structure for extensions and media types
+typedef struct {
+	char *ext;
+	char *mediatype;
+} extn;
+
 int main(int argc, char *argv[]) {
 
 	int sockfd, newsockfd, portno, pid;
