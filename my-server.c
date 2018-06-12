@@ -119,6 +119,24 @@ int process_request(int fd) {
 
 			//Searches for the first occurence of '.' in the string 'pointer'
 			char* s = strchr(pointer, '.');
+
+			int i;
+			for(i=0; extensions[i].ext != NULL; i++) {
+				if(strcmp(s+1, extensions[i].ext) == 0) {
+					fd1 = open(resource, 0_RDONLY, 0);
+					printf("Opening \"%s\"\n", resource);
+					if(fd1 == -1) {
+						printf("404 file not found error\n");
+						send_response(fd, "HTTP/1.1 404 Not Found\r\n");
+						send_response(fd, "Server : Web Server in C\r\n\r\n");
+						send_response(fd, "<html><head><title>404 Not Found</title></head>");
+						send_response(fd, "<body><p>404 Not Found: The requested resource could not be found!</p></body></html>");
+					//Handling php requests
+					} else if(strcmp(extensions[i].ext, "php") == 0) {
+						php_cgi(resource, fd);
+					}
+				}
+			}
 		}
 	}
 
@@ -129,6 +147,10 @@ int receive_new() {
 }
 
 char* webroot() {
+
+}
+
+void php_cgi(char* script_path, int fd) {
 
 }
 
