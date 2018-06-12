@@ -11,14 +11,23 @@ Instructions: The port number should be passed as an argument
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <fcntl.h>
 #include <errno.h>
+
+//To convert IP address (inet_ntop)
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+//For the stat structure
+#include <sys/stat.h>
+
+//To use sendfile() in osx --> splice()
+#include <fcntl.h>
 
 #define EOL "\r\n"
 #define EOL_SIZE 2
 
-#define BACKLOG 5
+#define BACKLOG 5 //The number of pending connections the queue will hold
 
 //Structure for extensions and media types
 typedef struct {
@@ -26,18 +35,21 @@ typedef struct {
 	char *mediatype;
 } extn;
 
+//Function declarations
 int process_request(int fd);
 int receive_new(int fd, char *buffer);
 char* webroot();
 void send_response(int fd, char *msg);
 int get_file_size(int fd);
 void php_cgi(char* script_path, int fd);
+void* get_in_addr (struct sockaddr* sa);
 
 int main(int argc, char *argv[]) {
 
 	int sockfd, newsockfd, portno, pid;
 	socklen_t clientlen;
 	struct sockaddr_in server_addr, client_addr;
+	char s[INET6_ADDRSTRLEN];
 
 	//Check whether the port is passed as an argument
 	if(argc < 2) {
@@ -133,7 +145,7 @@ int process_request(int fd) {
 		if(pointer == NULL) {
 			printf("Unknown Request\n");
 		} else {
-			if(ptr[strlen(ptr) - 1] == '/') {
+			if(pointer[strlen(pointer) - 1] == '/') {
 				strcat(pointer, "index.html");
 			}
 			strcpy(resource, webroot());
@@ -173,9 +185,10 @@ int process_request(int fd) {
 							ssize_t bytes_sent;
 							while(total_bytes < length) {
 								//Zero copy optimization
-								if((bytes_sent = sendfile(fd, fd1, 0, length - total_bytes)) <= 0) {
-									//EINTR - If a signal occurred while the system call was in progress
-									//EAGAIN - When performing non-blocking I/O - There is no data available right now, try again later.
+								//splice() copies data between two file descriptors within the kernel
+								if((bytes_sent = splice(fd, 0, fd1, 0, length - total_bytes)) <= 0) {
+									//EINTR - A signal interrupted the system call was completed
+									//EAGAIN - When performing non-blocking I/O - not all data was sent due to the socket	buffer being filled.
 									if(errno == EINTR || errno == EAGAIN) {
 										continue;
 									}
@@ -207,7 +220,7 @@ int process_request(int fd) {
 
 //Function to receive the buffer until EOL is reached
 int receive_new(int fd, char *buffer) {
-	char *p buffer; //Pointer to the buffer
+	char *p = buffer; //Pointer to the buffer
 	int eol_matched = 0;
 
 	//Receive 1 byte at a time and store it at pointer p (file descriptor, buffer_start, length, flag)
@@ -284,6 +297,14 @@ void send_response(int fd, char *msg) {
 	if(send(fd, msg, len, 0) == -1) {
 		printf("Error in send\n");
 	}
+}
+
+void* get_in_addr (struct sockaddr* sa) {
+  if (sa->sa_family == AF_INET) {
+    return &(((struct sockaddr_in*) sa)->sin_addr);
+  } else {
+    return &(((struct sockaddr_in6*) sa)->sin6_addr);
+  }
 }
 
 
