@@ -144,7 +144,8 @@ int process_request(int fd) {
 			int i;
 			for(i=0; extensions[i].ext != NULL; i++) {
 				if(strcmp(s+1, extensions[i].ext) == 0) {
-					fd1 = open(resource, 0_RDONLY, 0);
+					//Open only for reading
+					fd1 = open(resource, O_RDONLY, 0);
 					printf("Opening \"%s\"\n", resource);
 					if(fd1 == -1) {
 						printf("404 file not found error\n");
@@ -172,6 +173,8 @@ int process_request(int fd) {
 							while(total_bytes < length) {
 								//Zero copy optimization
 								if((bytes_sent = sendfile(fd, fd1, 0, length - total_bytes)) <= 0) {
+									//EINTR - If a signal occurred while the system call was in progress
+									//EAGAIN - When performing non-blocking I/O - There is no data available right now, try again later.
 									if(errno == EINTR || errno == EAGAIN) {
 										continue;
 									}
@@ -223,8 +226,20 @@ int receive_new() {
 }
 
 
-
+//Returns the webroot location
 char* webroot() {
+	//open the file 'conf'
+	FILE *in = fopen("conf", "rt");
+	//read the first line
+	char buff[1000];
+	fgets(buff, 1000, in);
+	//close the stream
+	fclose(in);
+	//search the last occurrence of new line
+	char* newline_pointer = strrchr(buff, '\n');
+	if(newline_pointer != NULL)
+		*newline_pointer = '\0'; //Assigns the end of line
+	return strdup(buff); //Duplicates the buffer
 
 }
 
