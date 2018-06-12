@@ -232,4 +232,22 @@ void php_cgi(char* script_path, int fd) {
 
 }
 
+//Get file size
+int get_file_size(int fd) {
+	struct stat stat_struct;
+	//fstat determines information about files based on the file descriptor
+	if(fstat(fd, &stat_struct) == -1)
+		return(1);
+	//returns file size in bytes
+	return (int)stat_struct.st_size;
+}
+
+//Function to send response
+void send_response(int fd. char *msg) {
+	int len = strlen(msg);
+	if(send(fd, msg, len, 0) == -1) {
+		printf("Error in send\n");
+	}
+}
+
 
