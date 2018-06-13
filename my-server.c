@@ -13,6 +13,7 @@ Instructions: The port number should be passed as an argument
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <sys/sendfile.h>
 
 //To convert IP address (inet_ntop)
 #include <netinet/in.h>
@@ -20,9 +21,6 @@ Instructions: The port number should be passed as an argument
 
 //For the stat structure
 #include <sys/stat.h>
-
-//To use sendfile() in osx --> copyfile()
-#include <copyfile.h>
 
 #define EOL "\r\n"
 #define EOL_SIZE 2
@@ -168,6 +166,7 @@ int process_request(int fd) {
 						send_response(fd, "<body><p>404 Not Found: The requested resource could not be found!</p></body></html>");
 					//Handling php requests
 					} else if(strcmp(extensions[i].ext, "php") == 0) {
+						//printf("%s\n", extensions[i].ext);
 						php_cgi(resource, fd);
 						sleep(1);
 						close(fd);
@@ -175,7 +174,8 @@ int process_request(int fd) {
 					} else {
 						printf("200 OK, Content-Type: %s\n\n", extensions[i].mediatype);
 						send_response(fd, "HTTP/1.1 200 OK\r\n");
-						send_response(fd, "Server :  Web Server in C\r\n\r\n");
+						send_response(fd, "Server :  Web Server in C\r\n");
+						send_response(fd, "Content-Type: text/html; charset=utf-8\r\n\r\n");
 
 						//If the request is a GET request
 						if(pointer == request + 4) {
@@ -185,11 +185,10 @@ int process_request(int fd) {
 							ssize_t bytes_sent;
 							while(total_bytes < length) {
 								//Zero copy optimization
-								//fcopyfile() in osx copies data between two file descriptors within the kernel
-								copyfile_flags_t flags = COPYFILE_DATA;
-								if((bytes_sent = fcopyfile(fd, fd1, 0, flags)) <= 0) {
+								//sendfile() copies data between two file descriptors within the kernel
+								if((bytes_sent = sendfile(fd, fd1, 0, length-total_bytes)) <= 0) {
 									//EINTR - A signal interrupted the system call was completed
-									//EAGAIN - When performing non-blocking I/O - not all data was sent due to the socket	buffer being filled.
+									//EAGAIN - When performing non-blocking I/O - not all data was sent due to the socket buffer being filled.
 									if(errno == EINTR || errno == EAGAIN) {
 										continue;
 									}
@@ -201,6 +200,7 @@ int process_request(int fd) {
 						}
 					}
 					break;
+
 				}
 				int size = sizeof(extensions) / sizeof(extensions[0]);
 				if(i == size-1) {
@@ -212,6 +212,7 @@ int process_request(int fd) {
 				}
 			}
 			close(fd);
+			//close(fd1);
 		}
 	}
 	/* Makes the full-duplex connection on the socket associated with the
@@ -261,6 +262,7 @@ char* webroot() {
 
 //Function to handle PHP requests
 void php_cgi(char* script_path, int fd) {
+	//printf("%d\n", (int)fd);
 	send_response(fd, "HTTP/1.1 200 OK\n Server: Web server in C\n Connection: close");
 
 	//Duplicates the file descriptor, making them aliases, and deletes the old file descriptor
