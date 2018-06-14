@@ -88,7 +88,7 @@ int process_request(int fd) {
 			if(pointer[strlen(pointer) - 1] == '/') {
 				//appends viduni.html to pointer
 				printf("121");
-				strcat(pointer, "viduni.html");
+				strcat(pointer, "index.html");
 			}
 			strcpy(resource, webroot());
 			strcat(resource, pointer);
@@ -107,14 +107,18 @@ int process_request(int fd) {
 						send_response(fd, "HTTP/1.1 404 Not Found\r\n");
 						send_response(fd, "Server : Web Server in C\r\n");
 						send_response(fd, "Content-Type: text/html; charset=utf-8\r\n");
+						send_response(fd, "Content-Length: 348000\r\n");
+						send_response(fd, "Connection: keep-alive, upgrade\r\n");
+						send_response(fd, "Keep-Alive: timeout=5, max=1000\r\n");
 						send_response(fd, "<html><head><title>404 Not Found</title></head>\r\n");
 						send_response(fd, "<body><p>404 Not Found: The requested resource could not be found!</p></body></html>\r\n\r\n");
 
 					//Handling php requests
 					} else if(strcmp(extensions[i].ext, "php") == 0) {
-						//printf("%s\n", extensions[i].ext);
 						php_cgi(resource, fd);
-						sleep(1);
+						//sleep(1);
+						printf("test");
+						shutdown(fd, SHUT_RDWR);
 						close(fd);
 						exit(1);
 					} else {
@@ -160,13 +164,13 @@ int process_request(int fd) {
 			        send_response(fd, "<body><p>415 Unsupported Media Type!</p></body></html>\r\n\r\n");
 				}
 			}
-			close(fd);
-			//close(fd1);
 		}
 	}
 	/* Makes the full-duplex connection on the socket associated with the
 	file descriptor socket to be shut down */
 	shutdown(fd, SHUT_RDWR);
+	close(fd);
+	
 	//return(0);
 }
 
@@ -211,15 +215,19 @@ char* webroot() {
 
 //Function to handle PHP requests
 void php_cgi(char* script_path, int fd) {
-	//printf("%d\n", (int)fd);
-	send_response(fd, "HTTP/1.1 200 OK\n Server: Web server in C\n Connection: close");
+	send_response(fd, "HTTP/1.1 200 OK\n Server: Web server in C\n Connection: close\r\n");
+	send_response(fd, "Content-Type: text/html\r\n\r\n");
+	//send_response(fd, "Content-Length: 348000\r\n\r\n");
+	//send_response(fd, "Connection: keep-alive, upgrade\r\n");
+	//send_response(fd, "Keep-Alive: timeout=5, max=1000\r\n\r\n");
+	
 
 	//Duplicates the file descriptor, making them aliases, and deletes the old file descriptor
 	dup2(fd, STDOUT_FILENO);
 	char script[500];
 	strcpy(script, "SCRIPT_FILENAME=");
 	strcat(script, script_path);
-
+	
 	//Adds setting to the environment
 	putenv("GATEWAY_INTERFACE=CGI/1.1");
 	putenv(script);
@@ -228,6 +236,12 @@ void php_cgi(char* script_path, int fd) {
 	putenv("REDIRECT_STATUS=true");
 	putenv("SERVER_PROTOCOL=HTTP/1.1");
 	putenv("REMOTE_HOST=127.0.0.1");
+	printf("phpkebk");
+
+	// send_response(fd, "Content-Type: text/html; charset=utf-8\r\n");
+	// send_response(fd, "Content-Length: 348000\r\n");
+	// send_response(fd, "Connection: keep-alive, upgrade\r\n");
+	// send_response(fd, "Keep-Alive: timeout=5, max=1000\r\n\r\n");
 
 	//replaces the current running process with a new process
 	execl("/usr/bin/php-cgi", "php-cgi", NULL);
@@ -312,6 +326,7 @@ int main(int argc, char *argv[]) {
 		} else {
 			close(newsockfd);
 		}
+		close(newsockfd);
 	} //end of while loop
 
 	close(sockfd);
