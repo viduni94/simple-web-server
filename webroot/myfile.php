@@ -1,5 +1,6 @@
 <?php
 header('Content-Type:text/html');
-echo "<p>Hello</p>";
+echo "<h1>Hello</h1>";
+echo "<p>First php file served</p>";
 
 ?>

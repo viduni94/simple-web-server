@@ -116,9 +116,9 @@ int process_request(int fd) {
 					//Handling php requests
 					} else if(strcmp(extensions[i].ext, "php") == 0) {
 						php_cgi(resource, fd);
-						//sleep(1);
-						printf("test");
-						shutdown(fd, SHUT_RDWR);
+						sleep(1);
+						//printf("test");
+						//shutdown(fd, SHUT_RDWR);
 						close(fd);
 						exit(1);
 					} else {
@@ -216,10 +216,10 @@ char* webroot() {
 //Function to handle PHP requests
 void php_cgi(char* script_path, int fd) {
 	send_response(fd, "HTTP/1.1 200 OK\n Server: Web server in C\n Connection: close\r\n");
-	send_response(fd, "Content-Type: text/html\r\n\r\n");
-	//send_response(fd, "Content-Length: 348000\r\n\r\n");
-	//send_response(fd, "Connection: keep-alive, upgrade\r\n");
-	//send_response(fd, "Keep-Alive: timeout=5, max=1000\r\n\r\n");
+	send_response(fd, "Content-Type: text/html; charset=utf-8\r\n");
+	send_response(fd, "Content-Length: 348000\r\n");
+	send_response(fd, "Connection: keep-alive, upgrade\r\n");
+	send_response(fd, "Keep-Alive: timeout=5, max=1000\r\n\r\n");
 	
 
 	//Duplicates the file descriptor, making them aliases, and deletes the old file descriptor
@@ -227,6 +227,7 @@ void php_cgi(char* script_path, int fd) {
 	char script[500];
 	strcpy(script, "SCRIPT_FILENAME=");
 	strcat(script, script_path);
+	
 	
 	//Adds setting to the environment
 	putenv("GATEWAY_INTERFACE=CGI/1.1");
@@ -236,15 +237,10 @@ void php_cgi(char* script_path, int fd) {
 	putenv("REDIRECT_STATUS=true");
 	putenv("SERVER_PROTOCOL=HTTP/1.1");
 	putenv("REMOTE_HOST=127.0.0.1");
-	printf("phpkebk");
-
-	// send_response(fd, "Content-Type: text/html; charset=utf-8\r\n");
-	// send_response(fd, "Content-Length: 348000\r\n");
-	// send_response(fd, "Connection: keep-alive, upgrade\r\n");
-	// send_response(fd, "Keep-Alive: timeout=5, max=1000\r\n\r\n");
+	//printf("phpkebk");
 
 	//replaces the current running process with a new process
-	execl("/usr/bin/php-cgi", "php-cgi", NULL);
+	execl("/usr/bin/php7.0", "usr/bin/php7.0", script_path, (char *)NULL);
 
 }
 
